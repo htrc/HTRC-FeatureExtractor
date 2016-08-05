@@ -1,6 +1,6 @@
 package org.hathitrust.htrc.tools.featureextractor
-import java.io.File
-import java.nio.charset.StandardCharsets
+
+import java.io._
 import java.util.zip.ZipFile
 import javax.xml.namespace.NamespaceContext
 import javax.xml.xpath.{XPathConstants, XPathFactory}
@@ -9,19 +9,39 @@ import edu.illinois.i3.scala.text.docstructure.{Page, PageStructureParser, PageW
 import edu.illinois.i3.scala.utils.implicits.XmlImplicits._
 import org.hathitrust.htrc.tools.pairtreehelper.PairtreeHelper.PairtreeDocument
 import org.w3c.dom.{Element, NodeList}
+import play.api.libs.json.{JsObject, Json}
 import resource._
+
+import scala.io.Codec
 
 object HTRCDocument {
 
-  def parse(pairtreeDoc: PairtreeDocument, pairtreeRoot: String):
+  private def checkFilesExist(files: File*): Unit = {
+    files.filterNot(_.exists()).foreach(f =>
+      throw new FileNotFoundException(f.toString + " (No such file or directory)")
+    )
+  }
+
+  def parse(pairtreeDoc: PairtreeDocument, pairtreeRoot: String)(implicit codec: Codec):
       HTRCDocument[Page with PageWithStructure] = {
 
     val docRootPath = new File(pairtreeRoot, pairtreeDoc.getDocumentRootPath)
-    val docZip = new File(docRootPath, pairtreeDoc.getCleanIdWithoutLibId + ".zip")
-    val docMets = new File(docRootPath, pairtreeDoc.getCleanIdWithoutLibId + ".mets.xml")
+    val docZipFile = new File(docRootPath, pairtreeDoc.getCleanIdWithoutLibId + ".zip")
+    val docMetsFile = new File(docRootPath, pairtreeDoc.getCleanIdWithoutLibId + ".mets.xml")
+    val docMetaFile = new File(docRootPath, pairtreeDoc.getCleanIdWithoutLibId + ".json")
 
-    val volume = managed(new ZipFile(docZip, StandardCharsets.UTF_8)).map { zipFile =>
-      val metsXml = Helper.loadXml(docMets)
+    checkFilesExist(docZipFile, docMetsFile, docMetaFile)
+
+    val docMeta = managed(new FileInputStream(docMetaFile)).map(Json.parse).either match {
+      case Right(meta) => meta
+      case Left(errors) =>
+        throw HTRCPairtreeDocumentException(
+          s"[${pairtreeDoc.getUncleanId}] Error while retrieving document metadata", errors.head
+        )
+    }
+
+    val volume = managed(new ZipFile(docZipFile, codec.charSet)).map { zipFile =>
+      val metsXml = Helper.loadXml(docMetsFile)
 
       val xpath = XPathFactory.newInstance().newXPath()
       xpath.setNamespaceContext(new NamespaceContext {
@@ -50,18 +70,19 @@ object HTRCDocument {
 
           case None =>
             throw HTRCPairtreeDocumentException(
-              s"Could not find ZIP entry for: $txtFileName!", null)
+              s"[${pairtreeDoc.getUncleanId}] Could not find ZIP entry for: $txtFileName", null)
         }
       }
 
-      new HTRCDocument(pairtreeDoc, docRootPath.toString,
+      new HTRCDocument(pairtreeDoc, docMeta.as[JsObject],
         PageStructureParser.parsePageStructure(pages))
 
     }.either match {
       case Right(vol) => vol
       case Left(errors) =>
         throw HTRCPairtreeDocumentException(
-          s"Error processing document: ${pairtreeDoc.getUncleanId}", errors.head)
+          s"Error processing document: ${pairtreeDoc.getUncleanId}", errors.head
+        )
     }
 
     volume
@@ -69,9 +90,8 @@ object HTRCDocument {
 }
 
 class HTRCDocument[T <: Page](val pairtreeDoc: PairtreeDocument,
-                              val docRootPath: String,
+                              val metadata: JsObject,
                               val pages: Seq[T]) {
-  override def toString: String =
-    new File(docRootPath, pairtreeDoc.getCleanIdWithoutLibId + ".zip").toString
+  override def toString: String = pairtreeDoc.getUncleanId
 }
 

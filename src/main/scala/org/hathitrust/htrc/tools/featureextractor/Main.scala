@@ -13,7 +13,7 @@ import org.joda.time.format.DateTimeFormat
 import org.rogach.scallop.ScallopConf
 import play.api.libs.json.Json
 
-import scala.io.{Source, StdIn}
+import scala.io.{Codec, Source, StdIn}
 import scala.util.{Failure, Try}
 
 object Main {
@@ -55,7 +55,8 @@ object Main {
       ids.foreachPartition(_ => initializeLangDetect(langProfilePath))
 
       val pairtreeDocs = ids.map(PairtreeHelper.getDocFromUncleanId)
-      val htrcDocs = pairtreeDocs.map(doc => Try(HTRCDocument.parse(doc, pairtreeRootPath)))
+      val htrcDocs = pairtreeDocs.map(
+        doc => Try(HTRCDocument.parse(doc, pairtreeRootPath)(Codec.UTF8)))
 
       val docStats = htrcDocs.map(_.map { doc =>
         val pagesStats = doc.pages.map(computePageStats(_, nlpModelsResolver))
@@ -64,7 +65,7 @@ object Main {
 
         doc.pairtreeDoc -> Json.obj(
           "id" -> doc.pairtreeDoc.getUncleanId,
-          //"metadata" -> doc.metadata,
+          "metadata" -> doc.metadata,
           "features" -> Json.toJsFieldJsValueWrapper(Json.obj(
             "schemaVersion" -> PageStats.SchemaVersion,
             "dateCreated" -> dateCreated,
