@@ -54,9 +54,8 @@ object Main {
       ids.persist(StorageLevel.MEMORY_ONLY_SER)
       ids.foreachPartition(_ => initializeLangDetect(langProfilePath))
 
-      val pairtreeDocs = ids.map(PairtreeHelper.getDocFromUncleanId)
-      val htrcDocs = pairtreeDocs.map(
-        doc => Try(HTRCDocument.parse(doc, pairtreeRootPath)(Codec.UTF8)))
+      val pairtreeDocs = ids.map(id => Try(PairtreeHelper.getDocFromUncleanId(id)))
+      val htrcDocs = pairtreeDocs.map(_.map(HTRCDocument.parse(_, pairtreeRootPath)(Codec.UTF8)))
 
       val docStats = htrcDocs.map(_.map { doc =>
         val pagesStats = doc.pages.map(computePageStats(_, nlpModelsResolver))
