@@ -27,4 +27,10 @@ object HTRCPage {
 
 }
 
+/**
+  * Object representing a page of an HTRC volume
+  *
+  * @param lines The lines of text on the page
+  * @param pageSeq The page identifier (sequence number)
+  */
 class HTRCPage(lines: Seq[Line], pageSeq: String) extends Page(lines, pageSeq) {}

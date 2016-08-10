@@ -13,6 +13,12 @@ import resource._
 object Helper {
   @transient lazy val logger = Logger.getLogger("FELogger")
 
+  /**
+    * Loads a file as an XML document
+    *
+    * @param f The file
+    * @return The XML document
+    */
   def loadXml(f: File): Document = {
     val factory = DocumentBuilderFactory.newInstance()
     factory.setNamespaceAware(true)
@@ -20,6 +26,13 @@ object Helper {
     documentBuilder.parse(f)
   }
 
+  /**
+    * Writes a JSON object to file
+    * @param json The JSON object
+    * @param file The file to write to
+    * @param compress True if compression is desired, False otherwise
+    * @param indent True if output should be pretty-printed, False otherwise
+    */
   def writeJsonFile(json: JsValue, file: File, compress: Boolean, indent: Boolean): Unit = {
     val parent = file.getParentFile
     if (parent != null) parent.mkdirs()

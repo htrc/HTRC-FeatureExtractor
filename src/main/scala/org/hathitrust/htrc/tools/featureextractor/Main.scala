@@ -16,6 +16,13 @@ import play.api.libs.json.Json
 import scala.io.{Codec, Source, StdIn}
 import scala.util.{Failure, Try}
 
+/**
+  * Extracts a set of features (such as ngram counts, POS tags, etc.) from the HathiTrust
+  * corpus for aiding in conducting 'distant-reading' (aka non-consumptive) research.
+  *
+  * @author Boris Capitanu
+  */
+
 object Main {
   val appName = "feature-extractor"
 
@@ -47,16 +54,19 @@ object Main {
       outputPath.mkdirs()
 
       val ids = numPartitions match {
-        case Some(n) => sc.parallelize(htids, n)
-        case None => sc.parallelize(htids)
+        case Some(n) => sc.parallelize(htids, n)  // split input into n partitions
+        case None => sc.parallelize(htids)        // use default number of partitions
       }
 
+      // cache the ids (to be re-used later) and initialize the language detector
       ids.persist(StorageLevel.MEMORY_ONLY_SER)
       ids.foreachPartition(_ => initializeLangDetect(langProfilePath))
 
+      // convert the ids to pairtree documents and load/parse them to identify running headers
       val pairtreeDocs = ids.map(id => Try(PairtreeHelper.getDocFromUncleanId(id)))
       val htrcDocs = pairtreeDocs.map(_.map(HTRCDocument.parse(_, pairtreeRootPath)(Codec.UTF8)))
 
+      // run the feature extractor on each page, for each volume, and return the result as JSON
       val docStats = htrcDocs.map(_.map { doc =>
         val pagesStats = doc.pages.map(computePageStats(_, nlpModelsResolver))
 
@@ -74,6 +84,7 @@ object Main {
         )
       })
 
+      // save the JSON results in a pairtree structure
       val results = docStats.map(_.map { case (doc, json) =>
         val ext = "json" + (if (compress) ".bz2" else "")
         val outputFile = new File(outputPath, s"${doc.getDocumentRootPath}/${doc.getCleanId}.$ext")
@@ -81,6 +92,7 @@ object Main {
         doc.getUncleanId
       })
 
+      // retrieve information about any documents that have failed to be processed
       val failed = ids.zip(results)
         .filter(_._2.isFailure)
         .map {
@@ -91,6 +103,7 @@ object Main {
           case _ => ""
         }
 
+      // ... and save that to disk for inspection
       failed.saveAsTextFile(s"$outputPath/errors")
     }
 
@@ -145,7 +158,7 @@ class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
   )
 
   val outputPath = opt[File]("output",
-    descr = "Write the output to DIR",
+    descr = "Write the output to DIR (should not exist, or be empty)",
     required = true,
     argName = "DIR"
   )

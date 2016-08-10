@@ -79,7 +79,7 @@ trait FeatureExtractor {
     // find the count of the longest sequence of lines starting with a capital letter in alphabetic order
     val longestAlphaSeq = countLongestAlphaSequenceOfCapitalizedLines(nonEmptyLines)
 
-    // combine hyphenated words
+    // combine hyphenated words occurring at end of line
     val text = HyphenWordRegex.replaceAllIn(nonEmptyLines.mkString("\n"), "$1$2\n")
 
     // perform sentence detection and part-of-speech tagging, then count the number of (token, pos) occurrences

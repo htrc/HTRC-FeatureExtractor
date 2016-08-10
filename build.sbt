@@ -26,8 +26,8 @@ lazy val commonSettings = Seq(
 lazy val `feature-extractor` = (project in file(".")).
   enablePlugins(GitVersioning, GitBranchPrompt, JavaAppPackaging).
   settings(commonSettings: _*).
-  settings(spark("2.0.0"): _*).
-  //settings(spark_dev("2.0.0"): _*).
+  //settings(spark("2.0.0"): _*).
+  settings(spark_dev("2.0.0"): _*).
   settings(
     name := "feature-extractor",
     version := "2.0-SNAPSHOT",
@@ -46,6 +46,7 @@ lazy val `feature-extractor` = (project in file(".")).
         exclude("com.fasterxml.jackson.core", "jackson-databind"),
       "com.gilt"                      %% "gfc-time"             % "0.0.5",
       "com.github.nscala-time"        %% "nscala-time"          % "2.12.0",
-      "org.scalatest"                 %% "scalatest"            % "2.2.6"      % Test
+      "org.scalacheck"                %% "scalacheck"           % "1.12.5"      % Test,
+      "org.scalatest"                 %% "scalatest"            % "2.2.6"       % Test
     )
   )

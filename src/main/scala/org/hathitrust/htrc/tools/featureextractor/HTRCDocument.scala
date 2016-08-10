@@ -16,12 +16,25 @@ import scala.io.Codec
 
 object HTRCDocument {
 
-  private def checkFilesExist(files: File*): Unit = {
+  /**
+    * Checks if the given files exist and throw FileNotFoundException any are missing
+    *
+    * @param files The files to check
+    */
+  private def checkFilesExist(files: File*): Unit =
     files.filterNot(_.exists()).foreach(f =>
       throw new FileNotFoundException(f.toString + " (No such file or directory)")
     )
-  }
 
+  /**
+    * Loads and parses an HTRC volume from the Pairtree; parsing performs
+    * header/footer identification
+    *
+    * @param pairtreeDoc The HTRC volume reference
+    * @param pairtreeRoot The folder representing the Pairtree root structure
+    * @param codec (Optional) The codec to use for reading/parsing the text
+    * @return The parsed HTRCDocument
+    */
   def parse(pairtreeDoc: PairtreeDocument, pairtreeRoot: String)(implicit codec: Codec):
       HTRCDocument[Page with PageWithStructure] = {
 
@@ -89,6 +102,14 @@ object HTRCDocument {
   }
 }
 
+/**
+  * An object representing an HTRC document
+  *
+  * @param pairtreeDoc The pairtree reference object describing the document
+  * @param metadata The JSON metadata entry for this document
+  * @param pages The sequence of pages comprising this document
+  * @tparam T Type parameter identifying the object type for the pages
+  */
 class HTRCDocument[T <: Page](val pairtreeDoc: PairtreeDocument,
                               val metadata: JsObject,
                               val pages: Seq[T]) {
