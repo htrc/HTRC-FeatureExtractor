@@ -30,7 +30,7 @@ lazy val `feature-extractor` = (project in file(".")).
   settings(spark_dev("2.0.0"): _*).
   settings(
     name := "feature-extractor",
-    version := "2.0-SNAPSHOT",
+    version := "2.0",
     description := "Extracts a set of features (such as ngram counts, POS tags, etc.) from the HathiTrust " +
        "corpus for aiding in conducting 'distant-reading' (aka non-consumptive) research",
     licenses += "Apache2" -> url("http://www.apache.org/licenses/LICENSE-2.0"),
