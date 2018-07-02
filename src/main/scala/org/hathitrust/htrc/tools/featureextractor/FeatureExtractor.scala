@@ -2,15 +2,16 @@ package org.hathitrust.htrc.tools.featureextractor
 
 import com.cybozu.labs.langdetect.Language
 import edu.illinois.i3.scala.nlp.NLPToolsFactory._
-import edu.illinois.i3.scala.text.docstructure.{Line, Page, PageWithStructure}
+import org.hathitrust.htrc.textprocessing.runningheaders.{Line, Page}
 import opennlp.tools.postag.POSTagger
 import opennlp.tools.sentdetect.SentenceDetector
 import opennlp.tools.tokenize.Tokenizer
+import org.hathitrust.htrc.textprocessing.runningheaders.{Line, Page, PageWithStructure}
 
 object FeatureExtractor {
   import edu.illinois.i3.scala.nlp.Language.Language
 
-  val HyphenWordRegex = """(?m)(\S*\p{L})-\n(\p{L}\S*)\s*""".r
+  val HyphenWordRegex = """(\S*\p{L})-\n(\p{L}\S*)\s?""".r
 
   def apply(lang: Language, nlpModelResolver: NLPResourceResolver) = new FeatureExtractor {
     import edu.illinois.i3.scala.nlp.NLPToolsFactory
@@ -100,8 +101,8 @@ trait FeatureExtractor {
       emptyLineCount = emptyLineCount,
       sentenceCount = sentenceCount,
       capAlphaSeq = longestAlphaSeq,
-      beginCharCounts = beginLineCharCounts,
-      endCharCount = endLineCharCounts,
+      beginLineChars = beginLineCharCounts,
+      endLineChars = endLineCharCounts,
       tokenPosCount = tokenPosCounts
     )
   }

@@ -5,9 +5,9 @@ import java.util.zip.ZipFile
 import javax.xml.namespace.NamespaceContext
 import javax.xml.xpath.{XPathConstants, XPathFactory}
 
-import edu.illinois.i3.scala.text.docstructure.{Page, PageStructureParser, PageWithStructure}
-import edu.illinois.i3.scala.utils.implicits.XmlImplicits._
+import org.hathitrust.htrc.textprocessing.runningheaders.{Page, PageStructureParser, PageWithStructure}
 import org.hathitrust.htrc.tools.pairtreehelper.PairtreeHelper.PairtreeDocument
+import org.hathitrust.htrc.tools.scala.implicits.XmlImplicits._
 import org.w3c.dom.{Element, NodeList}
 import play.api.libs.json.{JsObject, Json}
 import resource._

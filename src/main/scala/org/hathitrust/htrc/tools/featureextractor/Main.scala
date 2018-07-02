@@ -3,14 +3,14 @@ package org.hathitrust.htrc.tools.featureextractor
 import java.io.{File, FileInputStream}
 
 import com.gilt.gfc.time.Timer
-import edu.illinois.i3.scala.utils.metrics.Timer._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.{SparkConf, SparkContext}
 import org.hathitrust.htrc.tools.featureextractor.Executor._
 import org.hathitrust.htrc.tools.pairtreehelper.PairtreeHelper
+import org.hathitrust.htrc.tools.scala.metrics.Timer.time
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
-import org.rogach.scallop.ScallopConf
+import org.rogach.scallop.{Scallop, ScallopConf, ScallopHelpFormatter, SimpleOption}
 import play.api.libs.json.Json
 
 import scala.io.{Codec, Source, StdIn}
@@ -118,6 +118,17 @@ object Main {
   * @param arguments The cmd line args
   */
 class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
+  appendDefaultToDescription = true
+  helpFormatter = new ScallopHelpFormatter {
+    override def getOptionsHelp(s: Scallop): String = {
+      super.getOptionsHelp(s.copy(opts = s.opts.map {
+        case opt: SimpleOption if !opt.required =>
+          opt.copy(descr = "(Optional) " + opt.descr)
+        case other => other
+      }))
+    }
+  }
+
   val (appTitle, appVersion, appVendor) = {
     val p = getClass.getPackage
     val nameOpt = Option(p).flatMap(p => Option(p.getImplementationTitle))

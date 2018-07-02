@@ -1,7 +1,7 @@
 package org.hathitrust.htrc.tools.featureextractor
 
 import edu.illinois.i3.scala.nlp.{Language => NLPLanguage}
-import edu.illinois.i3.scala.text.docstructure.{Line, PageStructureParser}
+import org.hathitrust.htrc.textprocessing.runningheaders.{Line, PageStructureParser}
 import org.scalatest.Matchers._
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, _}

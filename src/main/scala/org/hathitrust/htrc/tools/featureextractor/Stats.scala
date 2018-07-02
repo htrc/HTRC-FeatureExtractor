@@ -19,10 +19,10 @@ object SectionStats {
 
   def apply(tokenCount: Int, lineCount: Int, emptyLineCount: Int, sentenceCount: Int,
             capAlphaSeq: Int,
-            beginCharCounts: Map[String, Int], endCharCount: Map[String, Int],
+            beginLineChars: Map[String, Int], endLineChars: Map[String, Int],
             tokenPosCount: Map[String, Map[String, Int]]) =
     new SectionStats(tokenCount, lineCount, emptyLineCount, sentenceCount,
-      capAlphaSeq, beginCharCounts, endCharCount, tokenPosCount)
+      capAlphaSeq, beginLineChars, endLineChars, tokenPosCount)
 
   def unapply(section: SectionStats) = Some((
     section.tokenCount, section.lineCount, section.emptyLineCount, section.sentenceCount,

@@ -3,8 +3,8 @@ package org.hathitrust.htrc.tools.featureextractor
 import com.cybozu.labs.langdetect.{DetectorFactory, Language}
 import edu.illinois.i3.scala.nlp.NLPToolsFactory.NLPResourceResolver
 import edu.illinois.i3.scala.nlp.{Language => NLPLanguage}
-import edu.illinois.i3.scala.text.docstructure.{Page, PageWithStructure}
 import org.apache.log4j.Logger
+import org.hathitrust.htrc.textprocessing.runningheaders.{Page, PageWithStructure}
 
 import scala.collection.JavaConversions._
 import scala.util.{Failure, Success, Try}
