@@ -1,69 +1,62 @@
 package org.hathitrust.htrc.tools.featureextractor
 
-import edu.illinois.i3.scala.nlp.{Language => NLPLanguage}
-import org.hathitrust.htrc.textprocessing.runningheaders.{Line, PageStructureParser}
-import org.scalatest.Matchers._
+import org.hathitrust.htrc.data.HtrcStructuredPage
+import org.hathitrust.htrc.textprocessing.runningheaders.Lines
+import org.hathitrust.htrc.tools.featureextractor.PageFeatureExtractor._
+import org.scalatest._
 import org.scalatest.prop.PropertyChecks
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, _}
-
 
 class TestFeatureExtractor extends FlatSpec
   with PropertyChecks
   with OptionValues
-  with BeforeAndAfterAll
+  with Matchers
   with ParallelTestExecution {
 
-  def nlpModelsResolver(s: String) = getClass.getResourceAsStream(s"/nlp-models/$s")
-
-  val pageText = Seq[Line](
-    new Line("  This is a title", 0, "1") { isHeader = true },
-    new Line("that spans two lines", 1, "1") { isHeader = true },
-    new Line("  ", 2, "1"),
-    new Line("Once upon a time there was a fox", 3, "1"),
-    new Line("that tried to jump, un-  ", 4, "1"),
-    new Line("successfully, over an all-too-lazy dog.", 5, "1"),
-    new Line("The dog didn't even notice the fox be-", 6, "1"),
-    new Line("  cause he was sleeping soundly", 7, "1"),
-    new Line("in his bed.", 8, "1"),
-    new Line("I received a notice from the dog,", 9, "1"),
-    new Line("complaining about this little fox.", 10, "1"),
-    new Line("Sleeping soundly, the dog ignored the fox.", 11, "1"),
-    new Line("The fox jumped, again, over the dog.", 12, "1"),
-    new Line("Not again, complained the dog...", 13, "1")
+  val pageLines: Lines = IndexedSeq[String](
+    "  This is a title",
+    "that spans two lines",
+    "  ",
+    "Once upon a time there was a fox",
+    "that tried to jump, un-  ",
+    "successfully, over an all-too-lazy dog.",
+    "The dog didn't even notice the fox be-",
+    "  cause he was sleeping soundly",
+    "in his bed.",
+    "I received a notice from the dog,",
+    "complaining about this little fox.",
+    "Sleeping soundly, the dog ignored the fox.",
+    "The fox jumped, again, over the dog.",
+    "Not again, complained the dog..."
   )
 
-  val pages = PageStructureParser.parsePageStructure(
-    Seq(new HTRCPage(pageText, "1"))
-  )
-
-  override protected def beforeAll(): Unit = {
-    super.beforeAll()
-
-    val langProfilesPath = getClass.getResource("/lang-profiles").getPath
-    Executor.initializeLangDetect(langProfilesPath)
-  }
+  val page: HtrcStructuredPage =
+    new HtrcStructuredPage(
+      seq = "1",
+      textLines = pageLines,
+      numHeaderLines = 2,
+      numFooterLines = 0
+    )
 
   "countLongestAlphaSequenceOfCapitalizedLines" should "work correctly" in {
-    val featureExtractor = FeatureExtractor(NLPLanguage.English, nlpModelsResolver)
-    val count = featureExtractor.countLongestAlphaSequenceOfCapitalizedLines(pageText.map(_.text))
-    count shouldBe 3
+    countLongestAlphaSequenceOfCapitalizedLines(pageLines) shouldBe 3
   }
 
-  "computePageStats" should "return the correct set of features and statistics" in {
-    val pageStats = Executor.computePageStats(pages.head, nlpModelsResolver)
+  "extractPageFeatures" should "return the correct set of features" in {
+    val pageFeatures = extractPageFeatures(page)
+    pageFeatures.language shouldBe Some("en")
+    pageFeatures.seq shouldBe "1"
 
-    val headerStats = pageStats.headerStats
-    val bodyStats = pageStats.bodyStats
-    val footerStats = pageStats.footerStats
+    val headerFeatures = pageFeatures.header.value
+    val bodyFeatures = pageFeatures.body.value
 
-    headerStats.tokenCount should be (8)
-    headerStats.lineCount should be (2)
-    headerStats.emptyLineCount should be (0)
-    headerStats.sentenceCount should be (1)
-    headerStats.capAlphaSeq should be (1)
-    headerStats.beginLineChars should equal (Map("t" -> 1, "T" -> 1))
-    headerStats.endLineChars should equal (Map("e" -> 1, "s" -> 1))
-    headerStats.tokenPosCount should equal (Map(
+    headerFeatures.tokenCount shouldBe 8
+    headerFeatures.lineCount shouldBe 2
+    headerFeatures.emptyLineCount shouldBe 0
+    headerFeatures.sentenceCount.value shouldBe 1
+    headerFeatures.capAlphaSeq shouldBe 1
+    headerFeatures.beginCharCount shouldBe Map("t" -> 1, "T" -> 1)
+    headerFeatures.endCharCount shouldBe Map("e" -> 1, "s" -> 1)
+    headerFeatures.tokenPosCount shouldBe Map(
       "is" -> Map("VBZ" -> 1),
       "This" -> Map("DT" -> 1),
       "two" -> Map("CD" -> 1),
@@ -72,18 +65,18 @@ class TestFeatureExtractor extends FlatSpec
       "spans" -> Map("VBZ" -> 1),
       "title" -> Map("NN" -> 1),
       "lines" -> Map("NNS" -> 1)
-    ))
+    )
 
-    bodyStats.tokenCount should be (77)
-    bodyStats.lineCount should be (12)
-    bodyStats.emptyLineCount should be (1)
-    bodyStats.sentenceCount should be (6)
-    bodyStats.capAlphaSeq should be (3)
-    bodyStats.beginLineChars should equal (Map(
+    bodyFeatures.tokenCount shouldBe 77
+    bodyFeatures.lineCount shouldBe 12
+    bodyFeatures.emptyLineCount shouldBe 1
+    bodyFeatures.sentenceCount.value shouldBe 6
+    bodyFeatures.capAlphaSeq shouldBe 3
+    bodyFeatures.beginCharCount shouldBe Map(
       "s" -> 1, "N" -> 1, "T" -> 2, "t" -> 1, "I" -> 1, "i" -> 1, "c" -> 2, "O" -> 1, "S" -> 1
-    ))
-    bodyStats.endLineChars should equal (Map("x" -> 1, "." -> 6, "y" -> 1, "-" -> 2, "," -> 1))
-    bodyStats.tokenPosCount should equal (Map(
+    )
+    bodyFeatures.endCharCount shouldBe Map("x" -> 1, "." -> 6, "y" -> 1, "-" -> 2, "," -> 1)
+    bodyFeatures.tokenPosCount shouldBe Map(
       "Once" -> Map("RB" -> 1),
       "this" -> Map("DT" -> 1),
       "in" -> Map("IN" -> 1),
@@ -129,23 +122,13 @@ class TestFeatureExtractor extends FlatSpec
       "fox" -> Map("NN" -> 5),
       "received" -> Map("VBD" -> 1),
       "the" -> Map("DT" -> 6)
-    ))
+    )
 
-    footerStats.tokenCount should be (0)
-    footerStats.lineCount should be (0)
-    footerStats.emptyLineCount should be (0)
-    footerStats.sentenceCount should be (0)
-    footerStats.capAlphaSeq should be (0)
-    footerStats.beginLineChars shouldBe empty
-    footerStats.endLineChars shouldBe empty
-    footerStats.tokenPosCount shouldBe empty
+    pageFeatures.footer shouldBe None
 
-    pageStats.tokenCount should be (85)
-    pageStats.lineCount should be (14)
-    pageStats.emptyLineCount should be (1)
-    pageStats.sentenceCount should be (7)
-    pageStats.languages should have size 1
-    pageStats.languages.head.lang should be ("en")
-    pageStats.languages.head.prob should be >0.9d
+    pageFeatures.tokenCount shouldBe 85
+    pageFeatures.lineCount shouldBe 14
+    pageFeatures.emptyLineCount shouldBe 1
+    pageFeatures.sentenceCount.value shouldBe 7
   }
 }
