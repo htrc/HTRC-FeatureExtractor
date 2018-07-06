@@ -14,8 +14,9 @@ import scala.util.matching.Regex
 
 object PageFeatureExtractor {
   val hyphenWordRegex: Regex = """(\S*\p{L})-\n(\p{L}\S*)\s?""".r
-  val punctBefore: Regex = """(?<=^|\s)(\p{P}+)(?=\p{L})""".r
-  val punctAfter: Regex = """(?<=\p{L})(\p{P}+)(?=\s|$)""".r
+  val punctBeforeRegex: Regex = """(?<=^|\s)(\p{P}+)(?=\p{L})""".r
+  val punctAfterRegex: Regex = """(?<=\p{L})(\p{P}+)(?=\s|$)""".r
+  val zeroWidthSpaceRegex: Regex = "\u200b".r
   val maxTokenChars: Int = 200
   val posTagUnknown: String = "UNK"
 
@@ -43,8 +44,8 @@ object PageFeatureExtractor {
   }
 
   def extractBasicFeatures(lines: Lines, nlp: StanfordCoreNLP): Option[SectionFeatures] = {
-    // trim lines and filter out empty lines
-    val nonEmptyLines = lines.map(_.trim).filterNot(_.isEmpty)
+    // trim lines, replace zero-width space, and filter out empty lines
+    val nonEmptyLines = lines.map(l => zeroWidthSpaceRegex.replaceAllIn(l, " ").trim).filterNot(_.isEmpty)
     val emptyLineCount = lines.size - nonEmptyLines.size
 
     // create the character distribution for begin and end characters on each line
@@ -56,9 +57,9 @@ object PageFeatureExtractor {
 
     val text = {
       var s = nonEmptyLines.mkString("\n")
-      s = hyphenWordRegex.replaceAllIn(s, "$1$2\n") // combine hyphenated words occurring at end of line
-      s = punctBefore.replaceAllIn(s, "$1 ")        // separate punctuation at beginning of words
-      s = punctAfter.replaceAllIn(s, " $1")         // separate punctuation at end of words
+      s = hyphenWordRegex.replaceAllIn(s, "$1$2\n")  // combine hyphenated words occurring at end of line
+      s = punctBeforeRegex.replaceAllIn(s, "$1 ")    // separate punctuation at beginning of words
+      s = punctAfterRegex.replaceAllIn(s, " $1")     // separate punctuation at end of words
       s
     }
 
@@ -102,8 +103,8 @@ object PageFeatureExtractor {
   }
 
   def extractFullFeatures(lines: Lines, nlp: StanfordCoreNLP): Option[SectionFeatures] = {
-    // trim lines and filter out empty lines
-    val nonEmptyLines = lines.map(_.trim).filterNot(_.isEmpty)
+    // trim lines, replace zero-width space, and filter out empty lines
+    val nonEmptyLines = lines.map(l => zeroWidthSpaceRegex.replaceAllIn(l, " ").trim).filterNot(_.isEmpty)
     val emptyLineCount = lines.size - nonEmptyLines.size
 
     // create the character distribution for begin and end characters on each line
@@ -113,8 +114,11 @@ object PageFeatureExtractor {
     // find the count of the longest sequence of lines starting with a capital letter in alphabetic order
     val longestAlphaSeq = countLongestAlphaSequenceOfCapitalizedLines(nonEmptyLines)
 
-    // combine hyphenated words occurring at end of line
-    val text = hyphenWordRegex.replaceAllIn(nonEmptyLines.mkString("\n"), "$1$2\n")
+    val text = {
+      var s = nonEmptyLines.mkString("\n")
+      s = hyphenWordRegex.replaceAllIn(s, "$1$2\n")  // combine hyphenated words occurring at end of line
+      s
+    }
 
     if (text.isEmpty)
       return None
