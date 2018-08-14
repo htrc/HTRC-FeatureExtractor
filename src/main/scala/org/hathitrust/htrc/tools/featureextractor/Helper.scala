@@ -2,32 +2,14 @@ package org.hathitrust.htrc.tools.featureextractor
 
 import java.io._
 import java.nio.charset.StandardCharsets
-import java.util.{Locale, Properties}
 
-import com.optimaize.langdetect.i18n.LdLocale
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream
 import org.hathitrust.htrc.tools.scala.io.IOUtils.using
 import org.slf4j.{Logger, LoggerFactory}
 import play.api.libs.json.{JsObject, Json}
 
-import scala.util.{Failure, Try}
-
 object Helper {
   @transient lazy val logger: Logger = LoggerFactory.getLogger(Main.appName)
-
-  def loadPropertiesFromClasspath(path: String): Try[Properties] = {
-    require(path != null && path.nonEmpty)
-
-    Option(getClass.getResourceAsStream(path))
-      .map(using(_) { is =>
-        Try {
-          val props = new Properties()
-          props.load(is)
-          props
-        }
-      })
-      .getOrElse(Failure(new FileNotFoundException(s"$path not found")))
-  }
 
   /**
     * Writes a JSON object to file
@@ -52,17 +34,5 @@ object Helper {
     val jsonTxt = if (indent) Json.prettyPrint(json) else Json.stringify(json)
 
     using(outputStream)(_.write(jsonTxt))
-  }
-
-  implicit class LdLocaleDecorator(ldLocale: LdLocale) {
-    def toLocale: Locale = {
-      val builder = new Locale.Builder()
-      builder.setLanguage(ldLocale.getLanguage)
-      if (ldLocale.getRegion.isPresent)
-        builder.setRegion(ldLocale.getRegion.get())
-      if (ldLocale.getScript.isPresent)
-        builder.setScript(ldLocale.getScript.get())
-      builder.build()
-    }
   }
 }

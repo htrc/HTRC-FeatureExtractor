@@ -1,12 +1,14 @@
 package org.hathitrust.htrc.tools.featureextractor.features
 
-object PageFeatures {
+import tdm.featureextractor.features._
+
+object HtrcPageFeatures {
   def apply(seq: String,
             version: String,
             language: Option[String],
             header: Option[SectionFeatures],
             body: Option[SectionFeatures],
-            footer: Option[SectionFeatures]): PageFeatures = {
+            footer: Option[SectionFeatures]): HtrcPageFeatures = {
     val allSections = List(header, body, footer)
     val nonEmptySections = allSections.collect { case Some(s) => s }
 
@@ -18,7 +20,7 @@ object PageFeatures {
         Some(nonEmptySections.foldLeft(0)(_ + _.sentenceCount.get))
       else None
 
-    new PageFeatures(
+    new HtrcPageFeatures(
       seq = seq,
       version = version,
       language = language,
@@ -46,13 +48,13 @@ object PageFeatures {
   * @param footer         The page footer features
   * @param language       The identified page language (if any)
   */
-case class PageFeatures(seq: String,
-                        version: String,
-                        language: Option[String],
-                        tokenCount: Int,
-                        lineCount: Int,
-                        emptyLineCount: Int,
-                        sentenceCount: Option[Int],
-                        header: Option[SectionFeatures],
-                        body: Option[SectionFeatures],
-                        footer: Option[SectionFeatures]) extends BasicFeatures
+case class HtrcPageFeatures(seq: String,
+                            version: String,
+                            language: Option[String],
+                            tokenCount: Int,
+                            lineCount: Int,
+                            emptyLineCount: Int,
+                            sentenceCount: Option[Int],
+                            header: Option[SectionFeatures],
+                            body: Option[SectionFeatures],
+                            footer: Option[SectionFeatures]) extends BasicFeatures

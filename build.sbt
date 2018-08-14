@@ -16,7 +16,7 @@ lazy val commonSettings = Seq(
     "-language:implicitConversions"
   ),
   resolvers ++= Seq(
-    "I3 Repository" at "http://nexus.htrc.illinois.edu/content/groups/public",
+    "HTRC Repository" at "http://nexus.htrc.illinois.edu/content/groups/public",
     Resolver.mavenLocal
   ),
   packageOptions in (Compile, packageBin) += Package.ManifestAttributes(
@@ -56,33 +56,21 @@ lazy val `feature-extractor` = (project in file(".")).
   enablePlugins(GitVersioning, GitBranchPrompt, JavaAppPackaging).
   settings(commonSettings).
   settings(ammoniteSettings).
-  //settings(spark("2.3.1")).
-  settings(spark_dev("2.3.1")).
+  settings(spark("2.3.1")).
+  //settings(spark_dev("2.3.1")).
   settings(
     name := "feature-extractor",
     description := "Extracts a set of features (such as ngram counts, POS tags, etc.) from the HathiTrust " +
        "corpus for aiding in conducting 'distant-reading' (aka non-consumptive) research",
     licenses += "Apache2" -> url("http://www.apache.org/licenses/LICENSE-2.0"),
     libraryDependencies ++= Seq(
-      "org.hathitrust.htrc"           %% "data-model"           % "1.3.1",
-      "org.hathitrust.htrc"           %% "scala-utils"          % "2.6",
+      "tdm"                           %% "feature-extractor"    % "2.1",
       "org.hathitrust.htrc"           %% "spark-utils"          % "1.1.0",
-      "edu.stanford.nlp"              %  "stanford-corenlp"     % "3.9.1",
-      "edu.stanford.nlp"              %  "stanford-corenlp"     % "3.9.1"
-        classifier "models"
-        classifier "models-arabic"
-        classifier "models-chinese"
-        classifier "models-english"
-        classifier "models-french"
-        classifier "models-german"
-        classifier "models-spanish",
-      "com.optimaize.languagedetector" % "language-detector"    % "0.6",
       "com.typesafe.play"             %% "play-json"            % "2.6.9"
         exclude("com.fasterxml.jackson.core", "jackson-databind")
         exclude("ch.qos.logback", "logback-classic"),
-      "org.rogach"                    %% "scallop"              % "3.1.2",
+      "org.rogach"                    %% "scallop"              % "3.1.3",
       "com.gilt"                      %% "gfc-time"             % "0.0.7",
-      "commons-codec"                 %  "commons-codec"        % "1.11",
       "ch.qos.logback"                %  "logback-classic"      % "1.2.3",
       "org.codehaus.janino"           %  "janino"               % "3.0.8",
       "org.scalacheck"                %% "scalacheck"           % "1.14.0"      % Test,

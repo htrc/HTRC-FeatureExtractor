@@ -2,6 +2,7 @@ package org.hathitrust.htrc.tools.featureextractor
 
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
+import tdm.featureextractor.features.SectionFeatures
 
 package object features {
 
@@ -19,7 +20,7 @@ package object features {
     (__ \ 'tokenPosCount).write[Map[String, Map[String, Int]]]
   )(unlift(SectionFeatures.unapply))
 
-  implicit val pageFeaturesWrites: OWrites[PageFeatures] = (
+  implicit val pageFeaturesWrites: OWrites[HtrcPageFeatures] = (
     (__ \ 'seq).write[String] and
     (__ \ 'version).write[String] and
     (__ \ 'language).write[Option[String]] and
@@ -30,7 +31,7 @@ package object features {
     (__ \ 'header).write[Option[SectionFeatures]] and
     (__ \ 'body).write[Option[SectionFeatures]] and
     (__ \ 'footer).write[Option[SectionFeatures]]
-  )(unlift(PageFeatures.unapply))
+  )(unlift(HtrcPageFeatures.unapply))
 
   implicit val volumeFeaturesWrites: OWrites[VolumeFeatures] = Json.writes[VolumeFeatures]
   implicit val efWrites: OWrites[EF] = Json.writes[EF]

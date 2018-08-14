@@ -82,16 +82,14 @@ object Main {
         HtrcVolume.from(pairtreeVolume)(Codec.UTF8).get
       }(volumeErrAcc)
 
-      val pagesRDD = volumesRDD.flatMap { vol =>
-        val id = vol.volumeId
-        vol.structuredPages.map(id -> _)
-      }
-
       val featuresRDD =
-        pagesRDD
-          .mapValues(PageFeatureExtractor.extractPageFeatures)
-          .groupByKey()
-          .mapValues(pages => VolumeFeatures(pages.toVector))
+        volumesRDD
+          .map { vol =>
+            val id = vol.volumeId
+            val pages = vol.structuredPages
+            val pagesFeatures = pages.map(HtrcPageFeatureExtractor.extractPageFeatures)
+            id -> VolumeFeatures(pagesFeatures)
+          }
 
       featuresRDD.foreach { case (id, features) =>
         val ext = ".json" + (if (compress) ".bz2" else "")
