@@ -3,6 +3,7 @@ package org.hathitrust.htrc.tools.featureextractor
 import java.io.File
 
 import com.gilt.gfc.time.Timer
+import org.apache.hadoop.fs.Path
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.{SparkConf, SparkContext}
 import org.hathitrust.htrc.data.{HtrcVolume, HtrcVolumeId}
@@ -82,14 +83,15 @@ object Main {
         HtrcVolume.from(pairtreeVolume)(Codec.UTF8).get
       }(volumeErrAcc)
 
+      val featureExtractorErrAcc = new ErrorAccumulator[HtrcVolume, String](_.volumeId.uncleanId)(sc)
       val featuresRDD =
         volumesRDD
-          .map { vol =>
+          .tryMap { vol =>
             val id = vol.volumeId
             val pages = vol.structuredPages
             val pagesFeatures = pages.map(HtrcPageFeatureExtractor.extractPageFeatures)
             id -> VolumeFeatures(pagesFeatures)
-          }
+          }(featureExtractorErrAcc)
 
       featuresRDD.foreach { case (id, features) =>
         val ext = ".json" + (if (compress) ".bz2" else "")
@@ -101,6 +103,14 @@ object Main {
         val efFile = new File(efOutputPath, efFileName)
         val ef = EF(id.uncleanId, features)
         writeJsonFile(Json.toJsObject(ef), efFile, compress, indent)
+      }
+
+      if (volumeErrAcc.nonEmpty || featureExtractorErrAcc.nonEmpty) {
+        logger.info("Writing error report(s)...")
+        if (volumeErrAcc.nonEmpty)
+          volumeErrAcc.saveErrors(new Path(outputPath, "id_errors.txt"), _.toString)
+        if (featureExtractorErrAcc.nonEmpty)
+          featureExtractorErrAcc.saveErrors(new Path(outputPath, "extractor_errors.txt"), _.toString)
       }
 
       val t1 = Timer.nanoClock()
