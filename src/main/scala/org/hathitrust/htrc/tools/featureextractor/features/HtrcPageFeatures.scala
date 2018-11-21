@@ -39,6 +39,8 @@ object HtrcPageFeatures {
   * Object recording aggregate features at the page level
   *
   * @param seq            The page sequence id
+  * @param version        The MD5 hash of the page content
+  * @param language       The identified page language (if any)
   * @param tokenCount     The total token count for the page
   * @param lineCount      The total line count for the page
   * @param emptyLineCount The empty line count for the page
@@ -46,7 +48,6 @@ object HtrcPageFeatures {
   * @param header         The page header features
   * @param body           The page body features
   * @param footer         The page footer features
-  * @param language       The identified page language (if any)
   */
 case class HtrcPageFeatures(seq: String,
                             version: String,

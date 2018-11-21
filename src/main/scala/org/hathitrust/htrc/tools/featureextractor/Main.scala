@@ -52,6 +52,7 @@ object Main {
     val sparkConf = new SparkConf()
     sparkConf.setAppName(appName)
     sparkConf.setIfMissing("spark.master", s"local[$numCores]")
+    val sparkMaster = sparkConf.get("spark.master")
 
     val spark = SparkSession.builder()
       .config(sparkConf)
@@ -61,7 +62,7 @@ object Main {
 
     try {
       logger.info("Starting...")
-      logger.debug(s"Using $numCores cores")
+      logger.info(s"Spark master: $sparkMaster")
 
       val t0 = Timer.nanoClock()
 
@@ -93,7 +94,7 @@ object Main {
             id -> VolumeFeatures(pagesFeatures)
           }(featureExtractorErrAcc)
 
-      featuresRDD.foreach { case (id, features) =>
+      val doneIds = featuresRDD.map { case (id, features) =>
         val ext = ".json" + (if (compress) ".bz2" else "")
         val efFileName = id.cleanId + ext
         val efOutputPath =
@@ -103,7 +104,10 @@ object Main {
         val efFile = new File(efOutputPath, efFileName)
         val ef = EF(id.uncleanId, features)
         writeJsonFile(Json.toJsObject(ef), efFile, compress, indent)
+        id.uncleanId
       }
+
+      doneIds.saveAsTextFile(new File(outputPath, "ids-done").toString)
 
       if (volumeErrAcc.nonEmpty || featureExtractorErrAcc.nonEmpty) {
         logger.info("Writing error report(s)...")
