@@ -49,6 +49,8 @@ object Main {
       case None => Iterator.continually(StdIn.readLine()).takeWhile(_ != null).toSeq
     }
 
+    val featuresOutputPath = new File(outputPath, "features").toString
+
     val sparkConf = new SparkConf()
     sparkConf.setAppName(appName)
     sparkConf.setIfMissing("spark.master", s"local[$numCores]")
@@ -66,7 +68,7 @@ object Main {
 
       val t0 = Timer.nanoClock()
 
-      new File(outputPath).mkdirs()
+      new File(featuresOutputPath).mkdirs()
 
       val idsRDD = numPartitions match {
         case Some(n) => sc.parallelize(htids, n) // split input into n partitions
@@ -99,8 +101,8 @@ object Main {
         val efFileName = id.cleanId + ext
         val efOutputPath =
           if (outputAsPairtree)
-            new File(outputPath, id.toPairtreeDoc.rootPath)
-          else new File(outputPath)
+            new File(featuresOutputPath, id.toPairtreeDoc.rootPath)
+          else new File(featuresOutputPath)
         val efFile = new File(efOutputPath, efFileName)
         val ef = EF(id.uncleanId, features)
         writeJsonFile(Json.toJsObject(ef), efFile, compress, indent)
