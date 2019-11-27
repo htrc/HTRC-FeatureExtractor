@@ -4,9 +4,11 @@ import java.io._
 import java.nio.charset.StandardCharsets
 
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream
-import org.hathitrust.htrc.tools.scala.io.IOUtils.using
 import org.slf4j.{Logger, LoggerFactory}
 import play.api.libs.json.{JsObject, Json}
+
+import scala.language.reflectiveCalls
+import scala.util.Try
 
 object Helper {
   @transient lazy val logger: Logger = LoggerFactory.getLogger(Main.appName)
@@ -35,4 +37,13 @@ object Helper {
 
     using(outputStream)(_.write(jsonTxt))
   }
+
+  def using[A, B <: {def close() : Unit}](closeable: B)(f: B => A): A =
+    try {
+      f(closeable)
+    }
+    finally {
+      Try(closeable.close())
+    }
+
 }

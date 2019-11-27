@@ -45,7 +45,7 @@ object Main {
     val compress = conf.compress()
     val indent = conf.indent()
     val htids = conf.htids.toOption match {
-      case Some(file) => Source.fromFile(file).getLines().toSeq
+      case Some(file) => using(Source.fromFile(file))(_.getLines().toList)
       case None => Iterator.continually(StdIn.readLine()).takeWhile(_ != null).toSeq
     }
 
