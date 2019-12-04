@@ -79,7 +79,7 @@ class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
     descr = "The file containing the HT IDs to be searched (if not provided, will read from stdin)"
   )
 
-  validateFileExists(pairtreeRootPath)
+  validateFileIsDirectory(pairtreeRootPath)
   validateFileExists(htids)
   verify()
 }
