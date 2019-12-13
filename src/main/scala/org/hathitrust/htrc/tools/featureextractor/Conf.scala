@@ -41,6 +41,19 @@ class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
     validate = 0<
   )
 
+  val sparkLog: ScallopOption[String] = opt[String]("spark-log",
+    descr = "Where to write logging output from Spark to",
+    argName = "FILE",
+    noshort = true
+  )
+
+  val logLevel: ScallopOption[String] = opt[String]("log-level",
+    descr = "The application log level; one of INFO, DEBUG, OFF",
+    argName = "LEVEL",
+    default = Some("INFO"),
+    validate = level => Set("INFO", "DEBUG", "OFF").contains(level.toUpperCase)
+  )
+
   val numCores: ScallopOption[Int] = opt[Int]("num-cores",
     descr = "The number of CPU cores to use (if not specified, uses all available cores)",
     short = 'c',
@@ -65,21 +78,12 @@ class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
     noshort = true
   )
 
-  val compress: ScallopOption[Boolean] = opt[Boolean]("compress",
-    descr = "Compress the output",
-    noshort = true
-  )
-
-  val indent: ScallopOption[Boolean] = opt[Boolean]("indent",
-    descr = "Indent the output",
-    noshort = true
-  )
-
   val htids: ScallopOption[File] = trailArg[File]("htids",
     descr = "The file containing the HT IDs to be searched (if not provided, will read from stdin)"
   )
 
   validateFileIsDirectory(pairtreeRootPath)
+  validateFileDoesNotExist(outputPath)
   validateFileExists(htids)
   verify()
 }

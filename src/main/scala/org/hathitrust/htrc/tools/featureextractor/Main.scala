@@ -3,6 +3,7 @@ package org.hathitrust.htrc.tools.featureextractor
 import java.io.File
 
 import com.gilt.gfc.time.Timer
+import org.apache.commons.io.FileUtils
 import org.apache.hadoop.fs.Path
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.{SparkConf, SparkContext}
@@ -41,15 +42,19 @@ object Main {
     val numCores = conf.numCores.map(_.toString).getOrElse("*")
     val pairtreeRootPath = conf.pairtreeRootPath().toString
     val outputPath = conf.outputPath().toString
-    val outputAsPairtree = conf.outputAsPairtree()
-    val compress = conf.compress()
-    val indent = conf.indent()
     val htids = conf.htids.toOption match {
       case Some(file) => using(Source.fromFile(file))(_.getLines().toList)
       case None => Iterator.continually(StdIn.readLine()).takeWhile(_ != null).toSeq
     }
 
     val featuresOutputPath = new File(outputPath, "features").toString
+
+    // set up logging destination
+    conf.sparkLog.toOption match {
+      case Some(logFile) => System.setProperty("spark.logFile", logFile)
+      case None =>
+    }
+    System.setProperty("logLevel", conf.logLevel().toUpperCase)
 
     val sparkConf = new SparkConf()
     sparkConf.setAppName(appName)
@@ -68,7 +73,7 @@ object Main {
 
       val t0 = Timer.nanoClock()
 
-      new File(featuresOutputPath).mkdirs()
+      new File(outputPath).mkdirs()
 
       val idsRDD = numPartitions match {
         case Some(n) => sc.parallelize(htids, n) // split input into n partitions
@@ -93,30 +98,31 @@ object Main {
             val id = vol.volumeId
             val pages = vol.structuredPages
             val pagesFeatures = pages.map(HtrcPageFeatureExtractor.extractPageFeatures)
-            id -> VolumeFeatures(pagesFeatures)
+            id -> VolumeFeatures(id.uncleanId, pagesFeatures)
           }(featureExtractorErrAcc)
 
-      val doneIds = featuresRDD.map { case (id, features) =>
-        val ext = ".json" + (if (compress) ".bz2" else "")
-        val efFileName = id.cleanId + ext
-        val efOutputPath =
-          if (outputAsPairtree)
-            new File(featuresOutputPath, id.toPairtreeDoc.rootPath)
-          else new File(featuresOutputPath)
-        val efFile = new File(efOutputPath, efFileName)
-        val ef = EF(id.uncleanId, features)
-        writeJsonFile(Json.toJsObject(ef), efFile, compress, indent)
-        id.uncleanId
-      }
+      val featuresJsonRDD = featuresRDD
+        .map { case (id, features) => id.uncleanId -> Json.toJson(features).toString }
 
-      doneIds.saveAsTextFile(new File(outputPath, "ids-done").toString)
+      featuresJsonRDD.saveAsSequenceFile(featuresOutputPath, Some(classOf[org.apache.hadoop.io.compress.BZip2Codec]))
+
+//      val doneIds = featuresRDD.map { case (id, features) =>
+//        val efFileName = id.cleanId + ".json"
+//        val efOutputPath = new File(featuresOutputPath)
+//        val efFile = new File(efOutputPath, efFileName)
+//        val ef = EF(id.uncleanId, features)
+//        FileUtils.writeStringToFile(efFile, Json.prettyPrint(Json.toJson(ef)))
+//        id.uncleanId
+//      }
+//
+//      doneIds.saveAsTextFile(new File(outputPath, "ids-done").toString)
 
       if (volumeErrAcc.nonEmpty || featureExtractorErrAcc.nonEmpty) {
         logger.info("Writing error report(s)...")
         if (volumeErrAcc.nonEmpty)
-          volumeErrAcc.saveErrors(new Path(outputPath, "id_errors.txt"), _.toString)
+          volumeErrAcc.saveErrors(new Path(outputPath, "id_errors.txt"))
         if (featureExtractorErrAcc.nonEmpty)
-          featureExtractorErrAcc.saveErrors(new Path(outputPath, "extractor_errors.txt"), _.toString)
+          featureExtractorErrAcc.saveErrors(new Path(outputPath, "extractor_errors.txt"))
       }
 
       val t1 = Timer.nanoClock()
