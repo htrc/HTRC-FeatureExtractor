@@ -34,7 +34,7 @@ lazy val ammoniteSettings = Seq(
     {
       val version = scalaBinaryVersion.value match {
         case "2.10" => "1.0.3"
-        case _ ⇒ "1.8.1"
+        case _ ⇒ "2.0.4"
       }
       "com.lihaoyi" % "ammonite" % version % Test cross CrossVersion.full
     },
@@ -50,23 +50,23 @@ lazy val `feature-extractor` = (project in file("."))
   .enablePlugins(GitVersioning, GitBranchPrompt, JavaAppPackaging)
   .settings(commonSettings)
   .settings(ammoniteSettings)
-  //.settings(spark("2.4.4"))
-  .settings(spark_dev("2.4.4"))
+  .settings(spark("2.4.4"))
+//  .settings(spark_dev("2.4.4"))
   .settings(
     name := "feature-extractor",
     description := "Extracts a set of features (such as ngram counts, POS tags, etc.) from the HathiTrust " +
        "corpus for aiding in conducting 'distant-reading' (aka non-consumptive) research",
     licenses += "Apache2" -> url("http://www.apache.org/licenses/LICENSE-2.0"),
     libraryDependencies ++= Seq(
-      "tdm"                           %% "feature-extractor"    % "2.6.1",
+      "tdm"                           %% "feature-extractor"    % "2.6.2",
       "org.hathitrust.htrc"           %% "spark-utils"          % "1.3",
-      "com.typesafe.play"             %% "play-json"            % "2.7.4",
-      "org.rogach"                    %% "scallop"              % "3.3.1",
+      "com.typesafe.play"             %% "play-json"            % "2.8.1",
+      "org.rogach"                    %% "scallop"              % "3.3.2",
       "com.gilt"                      %% "gfc-time"             % "0.0.7",
       "ch.qos.logback"                %  "logback-classic"      % "1.2.3",
       "org.codehaus.janino"           %  "janino"               % "3.1.0",
-      "org.scalacheck"                %% "scalacheck"           % "1.14.2"      % Test,
-      "org.scalatest"                 %% "scalatest"            % "3.0.8"       % Test
+      "org.scalacheck"                %% "scalacheck"           % "1.14.3"      % Test,
+      "org.scalatest"                 %% "scalatest"            % "3.1.0"       % Test
     ),
     dependencyOverrides ++= Seq(
       "com.google.guava" % "guava" % "15.0",
