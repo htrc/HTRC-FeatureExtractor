@@ -23,7 +23,7 @@ object HtrcPageFeatures {
     new HtrcPageFeatures(
       seq = seq,
       version = version,
-      language = language,
+      calculatedLanguage = language,
       tokenCount = tokenCount,
       lineCount = lineCount,
       emptyLineCount = emptyLineCount,
@@ -40,7 +40,7 @@ object HtrcPageFeatures {
   *
   * @param seq            The page sequence id
   * @param version        The MD5 hash of the page content
-  * @param language       The identified page language (if any)
+  * @param calculatedLanguage       The identified page language (if any)
   * @param tokenCount     The total token count for the page
   * @param lineCount      The total line count for the page
   * @param emptyLineCount The empty line count for the page
@@ -51,7 +51,7 @@ object HtrcPageFeatures {
   */
 case class HtrcPageFeatures(seq: String,
                             version: String,
-                            language: Option[String],
+                            calculatedLanguage: Option[String],
                             tokenCount: Int,
                             lineCount: Int,
                             emptyLineCount: Int,

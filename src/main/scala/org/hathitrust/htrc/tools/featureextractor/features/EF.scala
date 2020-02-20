@@ -16,8 +16,8 @@ object EF {
   private val baseIdFormat: String = "https://data.analytics.hathitrust.org/extracted-features/%s/%s"
 
   def apply(htid: String, features: VolumeFeatures): EF = {
-    val dateTimeFormatter = DateTimeFormat forPattern "yyyy-MM-dd"
-    val datePublished = DateTime.now().toString(dateTimeFormatter)
+    val dateTimeFormatter = DateTimeFormat forPattern "yyyyMMdd"
+    val datePublished = DateTime.now().toString(dateTimeFormatter).toInt
 
     new EF(
       `@context` = `@context`,
@@ -38,5 +38,5 @@ case class EF(`@context`: String,
               htid: String,
               `type`: String,
               publisher: JsObject,
-              datePublished: String,
+              datePublished: Int,
               features: VolumeFeatures)

@@ -12,7 +12,7 @@ object HtrcPageFeatureExtractor {
     HtrcPageFeatures(
       seq = page.seq,
       version = features.version,
-      language = features.language,
+      calculatedLanguage = features.language,
       tokenCount =  features.tokenCount,
       lineCount = features.lineCount,
       emptyLineCount = features.emptyLineCount,
