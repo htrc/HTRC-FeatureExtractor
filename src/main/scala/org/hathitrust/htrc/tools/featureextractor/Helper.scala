@@ -1,39 +1,27 @@
 package org.hathitrust.htrc.tools.featureextractor
 
-import java.io.{OutputStreamWriter, _}
+import java.io._
 import java.nio.charset.StandardCharsets
-import javax.xml.parsers.DocumentBuilderFactory
 
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream
-import org.apache.log4j.Logger
-import org.w3c.dom.Document
-import play.api.libs.json.{JsValue, Json}
-import resource._
+import org.slf4j.{Logger, LoggerFactory}
+import play.api.libs.json.{JsObject, Json}
+
+import scala.language.reflectiveCalls
+import scala.util.Try
 
 object Helper {
-  @transient lazy val logger = Logger.getLogger("FELogger")
-
-  /**
-    * Loads a file as an XML document
-    *
-    * @param f The file
-    * @return The XML document
-    */
-  def loadXml(f: File): Document = {
-    val factory = DocumentBuilderFactory.newInstance()
-    factory.setNamespaceAware(true)
-    val documentBuilder = factory.newDocumentBuilder()
-    documentBuilder.parse(f)
-  }
+  @transient lazy val logger: Logger = LoggerFactory.getLogger(Main.appName)
 
   /**
     * Writes a JSON object to file
-    * @param json The JSON object
-    * @param file The file to write to
+    *
+    * @param json     The JSON object
+    * @param file     The file to write to
     * @param compress True if compression is desired, False otherwise
-    * @param indent True if output should be pretty-printed, False otherwise
+    * @param indent   True if output should be pretty-printed, False otherwise
     */
-  def writeJsonFile(json: JsValue, file: File, compress: Boolean, indent: Boolean): Unit = {
+  def writeJsonFile(json: JsObject, file: File, compress: Boolean, indent: Boolean): Unit = {
     val parent = file.getParentFile
     if (parent != null) parent.mkdirs()
 
@@ -47,7 +35,15 @@ object Helper {
 
     val jsonTxt = if (indent) Json.prettyPrint(json) else Json.stringify(json)
 
-    for (writer <- managed(outputStream))
-      writer.write(jsonTxt)
+    using(outputStream)(_.write(jsonTxt))
   }
+
+  def using[A, B <: {def close() : Unit}](closeable: B)(f: B => A): A =
+    try {
+      f(closeable)
+    }
+    finally {
+      Try(closeable.close())
+    }
+
 }
