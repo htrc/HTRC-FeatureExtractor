@@ -1,6 +1,6 @@
 package org.hathitrust.htrc.tools.featureextractor.features
 
-import tdm.featureextractor.features._
+import org.hathitrust.htrc.featureextractor.features._
 
 object HtrcPageFeatures {
   def apply(seq: String,

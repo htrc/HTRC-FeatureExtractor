@@ -39,7 +39,7 @@
   </root>
 
   <!-- additivity=false prevents logs for this logger to go to the other inherited appenders -->
-  <logger additivity="false" level="${logLevel:-INFO}" name="feature-extractor">
+  <logger additivity="false" level="${logLevel:-INFO}" name="extract-features">
     <appender-ref ref="STDOUT"/>
 
     <if condition='isDefined("spark.logFile")'>

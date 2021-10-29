@@ -1,14 +1,13 @@
 package org.hathitrust.htrc.tools.featureextractor
 
-import java.io._
-import java.nio.charset.StandardCharsets
-
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream
 import org.slf4j.{Logger, LoggerFactory}
 import play.api.libs.json.{JsObject, Json}
 
+import java.io._
+import java.nio.charset.StandardCharsets
 import scala.language.reflectiveCalls
-import scala.util.Try
+import scala.util.Using
 
 object Helper {
   @transient lazy val logger: Logger = LoggerFactory.getLogger(Main.appName)
@@ -26,6 +25,7 @@ object Helper {
     if (parent != null) parent.mkdirs()
 
     val outputStream = {
+      @SuppressWarnings(Array("org.wartremover.warts.Var"))
       var stream: OutputStream = new BufferedOutputStream(new FileOutputStream(file))
       if (compress)
         stream = new BZip2CompressorOutputStream(stream, BZip2CompressorOutputStream.MAX_BLOCKSIZE)
@@ -35,15 +35,7 @@ object Helper {
 
     val jsonTxt = if (indent) Json.prettyPrint(json) else Json.stringify(json)
 
-    using(outputStream)(_.write(jsonTxt))
+    Using.resource(outputStream)(_.write(jsonTxt))
   }
-
-  def using[A, B <: {def close() : Unit}](closeable: B)(f: B => A): A =
-    try {
-      f(closeable)
-    }
-    finally {
-      Try(closeable.close())
-    }
 
 }

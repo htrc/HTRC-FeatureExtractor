@@ -2,7 +2,7 @@ package org.hathitrust.htrc.tools.featureextractor
 
 import org.hathitrust.htrc.data.HtrcStructuredPage
 import org.hathitrust.htrc.tools.featureextractor.features.HtrcPageFeatures
-import tdm.featureextractor.PageFeatureExtractor
+import org.hathitrust.htrc.featureextractor.PageFeatureExtractor
 
 object HtrcPageFeatureExtractor {
 
