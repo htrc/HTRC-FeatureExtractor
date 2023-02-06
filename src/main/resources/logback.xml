@@ -1,0 +1,51 @@
+<configuration debug="false">
+  <appender class="ch.qos.logback.core.ConsoleAppender" name="STDOUT">
+    <encoder>
+      <!--<pattern>%date{HH:mm:ss.SSS} %highlight(%5level) %gray(%logger{90}) %msg%n%ex{short}</pattern>-->
+      <pattern>%date{HH:mm:ss.SSS} %highlight(%5level) %msg%n%ex{short}</pattern>
+    </encoder>
+  </appender>
+
+  <if condition='isDefined("spark.logFile")'>
+    <then>
+      <appender class="ch.qos.logback.core.FileAppender" name="FILE">
+        <file>${spark.logFile}</file>
+        <append>false</append>
+        <encoder>
+          <pattern>%date{yy/MM/dd HH:mm:ss} %level [%thread] %logger{1}: %msg%n</pattern>
+        </encoder>
+      </appender>
+    </then>
+  </if>
+
+  <!-- Spark supplied settings to quiet down chatty logs -->
+  <logger level="FATAL" name="org.apache.hadoop.hive.metastore.RetryingHMSHandler"/>
+  <logger level="WARN"  name="org.spark_project.jetty"/>
+  <logger level="ERROR" name="org.spark_project.jetty.util.component.AbstractLifeCycle"/>
+  <logger level="ERROR" name="org.apache.parquet"/>
+  <logger level="ERROR" name="parquet"/>
+  <logger level="INFO"  name="org.apache.spark.repl.SparkIMain$exprTyper"/>
+  <logger level="INFO"  name="org.apache.spark.repl.SparkILoop$SparkILoopInterpreter"/>
+  <logger level="WARN"  name="org.apache.spark.repl.Main"/>
+  <logger level="ERROR" name="org.apache.hadoop.hive.ql.exec.FunctionRegistry"/>
+
+  <!-- Default root logger (where all Spark output goes) -->
+  <root level="INFO">
+    <if condition='isDefined("spark.logFile")'>
+      <then>
+        <appender-ref ref="FILE"/>
+      </then>
+    </if>
+  </root>
+
+  <!-- additivity=false prevents logs for this logger to go to the other inherited appenders -->
+  <logger additivity="false" level="${logLevel:-INFO}" name="extract-features">
+    <appender-ref ref="STDOUT"/>
+
+    <if condition='isDefined("spark.logFile")'>
+      <then>
+        <appender-ref ref="FILE"/>
+      </then>
+    </if>
+  </logger>
+</configuration>

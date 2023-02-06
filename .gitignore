@@ -1,6 +1,12 @@
 /.clover/
 /.idea/
+/.bsp/
+/.metals/
+.bloop/
+metals.sbt
+*.sublime-workspace
 *.iml
 /project/project/
+/credentials.sbt
 target/
 *.class

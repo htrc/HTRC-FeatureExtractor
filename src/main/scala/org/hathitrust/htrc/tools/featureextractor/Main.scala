@@ -1,20 +1,21 @@
 package org.hathitrust.htrc.tools.featureextractor
 
-import java.io.{File, FileInputStream}
-
 import com.gilt.gfc.time.Timer
-import edu.illinois.i3.scala.utils.metrics.Timer._
-import org.apache.spark.storage.StorageLevel
+import org.apache.commons.io.FileUtils
+import org.apache.hadoop.fs.Path
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.{SparkConf, SparkContext}
-import org.hathitrust.htrc.tools.featureextractor.Executor._
-import org.hathitrust.htrc.tools.pairtreehelper.PairtreeHelper
-import org.joda.time.DateTime
-import org.joda.time.format.DateTimeFormat
-import org.rogach.scallop.ScallopConf
+import org.hathitrust.htrc.data.{HtrcVolume, HtrcVolumeId}
+import org.hathitrust.htrc.tools.featureextractor.Helper._
+import org.hathitrust.htrc.tools.featureextractor.features.{EF, VolumeFeatures}
+import org.hathitrust.htrc.tools.spark.errorhandling.ErrorAccumulator
+import org.hathitrust.htrc.tools.spark.errorhandling.RddExtensions._
 import play.api.libs.json.Json
 
+import java.io.File
+import java.nio.charset.StandardCharsets
 import scala.io.{Codec, Source, StdIn}
-import scala.util.{Failure, Try}
+import scala.util.Using
 
 /**
   * Extracts a set of features (such as ngram counts, POS tags, etc.) from the HathiTrust
@@ -24,161 +25,132 @@ import scala.util.{Failure, Try}
   */
 
 object Main {
-  val appName = "feature-extractor"
+  val appName: String = "extract-features"
+  val supportedLanguages: Set[String] = Set("ar", "zh", "en", "fr", "de", "es")
 
+  def stopSparkAndExit(sc: SparkContext, exitCode: Int = 0): Unit = {
+    try {
+      sc.stop()
+    }
+    finally {
+      System.exit(exitCode)
+    }
+  }
+
+  @SuppressWarnings(Array("org.wartremover.warts.TryPartial"))
   def main(args: Array[String]): Unit = {
-    val conf = new Conf(args)
+    val conf = new Conf(args.toIndexedSeq)
     val numPartitions = conf.numPartitions.toOption
+    val numCores = conf.numCores.map(_.toString).getOrElse("*")
     val pairtreeRootPath = conf.pairtreeRootPath().toString
-    val langProfilePath = conf.langProfilePath().toString
-    val nlpModelsPath = conf.nlpModelsPath().toString
-    val outputPath = conf.outputPath()
-    val compress = conf.compress()
-    val indent = conf.indent()
+    val outputPath = conf.outputPath().toString
     val htids = conf.htids.toOption match {
-      case Some(file) => Source.fromFile(file).getLines().toSeq
+      case Some(file) => Using.resource(Source.fromFile(file))(_.getLines().toList)
       case None => Iterator.continually(StdIn.readLine()).takeWhile(_ != null).toSeq
     }
 
-    def nlpModelsResolver(name: String) = new FileInputStream(new File(nlpModelsPath, name))
-    val dateTimeFormatter = DateTimeFormat forPattern "yyyy-MM-dd'T'HH:mm"
-    val dateCreated = DateTime.now().toString(dateTimeFormatter)
+    val featuresOutputPath = new File(outputPath, "features").toString
+
+    // set up logging destination
+    conf.sparkLog.toOption match {
+      case Some(logFile) => System.setProperty("spark.logFile", logFile)
+      case None =>
+    }
+    System.setProperty("logLevel", conf.logLevel().toUpperCase)
 
     val sparkConf = new SparkConf()
-    sparkConf.setIfMissing("spark.master", "local[*]")
-    sparkConf.setIfMissing("spark.app.name", appName)
+    sparkConf.setAppName(appName)
+    sparkConf.setIfMissing("spark.master", s"local[$numCores]")
+    val sparkMaster = sparkConf.get("spark.master")
 
-    val sc = new SparkContext(sparkConf)
+    val spark = SparkSession.builder()
+      .config(sparkConf)
+      .getOrCreate()
 
-    val (_, elapsed) = time {
-      outputPath.mkdirs()
+    val sc = spark.sparkContext
 
-      val ids = numPartitions match {
-        case Some(n) => sc.parallelize(htids, n)  // split input into n partitions
-        case None => sc.parallelize(htids)        // use default number of partitions
+    try {
+      logger.info("Starting...")
+      logger.info(s"Spark master: $sparkMaster")
+
+      val t0 = Timer.nanoClock()
+
+      new File(outputPath).mkdirs()
+
+      val idsRDD = numPartitions match {
+        case Some(n) => sc.parallelize(htids, n) // split input into n partitions
+        case None => sc.parallelize(htids) // use default number of partitions
       }
 
-      // cache the ids (to be re-used later) and initialize the language detector
-      ids.persist(StorageLevel.MEMORY_ONLY_SER)
-      ids.foreachPartition(_ => initializeLangDetect(langProfilePath))
+      val volumeErrAcc = new ErrorAccumulator[String, String](identity)(sc)
+      val volumesRDD = idsRDD.tryMap { id =>
+        val pairtreeVolume =
+          HtrcVolumeId
+            .parseUnclean(id)
+            .map(_.toPairtreeDoc(pairtreeRootPath))
+            .get
 
-      // convert the ids to pairtree documents and load/parse them to identify running headers
-      val pairtreeDocs = ids.map(id => Try(PairtreeHelper.getDocFromUncleanId(id)))
-      val htrcDocs = pairtreeDocs.map(_.map(HTRCDocument.parse(_, pairtreeRootPath)(Codec.UTF8)))
+        HtrcVolume.from(pairtreeVolume)(Codec.UTF8).get
+      }(volumeErrAcc)
 
-      // run the feature extractor on each page, for each volume, and return the result as JSON
-      val docStats = htrcDocs.map(_.map { doc =>
-        val pagesStats = doc.pages.map(computePageStats(_, nlpModelsResolver))
+      val featureExtractorErrAcc = new ErrorAccumulator[HtrcVolume, String](_.volumeId.uncleanId)(sc)
+      val featuresRDD =
+        volumesRDD
+          .tryMap { vol =>
+            val id = vol.volumeId
+            val pages = vol.structuredPages
+            val pagesFeatures = pages.map(HtrcPageFeatureExtractor.extractPageFeatures)
+            id -> VolumeFeatures(id.uncleanId, pagesFeatures)
+          }(featureExtractorErrAcc)
 
-        import JsonStats._
+      /////////////////////////////////////////////////////////////////
+      // START: Uncomment below to save EF files as sequence files
+      /////////////////////////////////////////////////////////////////
+//      val featuresJsonRDD = featuresRDD
+//        .map { case (id, features) => id.uncleanId -> Json.toJson(features).toString }
+//
+//      featuresJsonRDD.saveAsSequenceFile(featuresOutputPath, Some(classOf[org.apache.hadoop.io.compress.BZip2Codec]))
+      ///////////////////////////////////////////////////
+      // END: Save EF files as sequence files
+      ///////////////////////////////////////////////////
 
-        doc.pairtreeDoc -> Json.obj(
-          "id" -> doc.pairtreeDoc.getUncleanId,
-          "metadata" -> doc.metadata,
-          "features" -> Json.toJsFieldJsValueWrapper(Json.obj(
-            "schemaVersion" -> PageStats.SchemaVersion,
-            "dateCreated" -> dateCreated,
-            "pageCount" -> pagesStats.size,
-            "pages" -> Json.toJson(pagesStats)
-          ))
-        )
-      })
 
-      // save the JSON results in a pairtree structure
-      val results = docStats.map(_.map { case (doc, json) =>
-        val ext = "json" + (if (compress) ".bz2" else "")
-        val outputFile = new File(outputPath, s"${doc.getDocumentRootPath}/${doc.getCleanId}.$ext")
-        Helper.writeJsonFile(json, outputFile, compress, indent)
-        doc.getUncleanId
-      })
+      //////////////////////////////////////////////////////////////////////////////
+      // START: Uncomment below to save EF files individually to output folder
+      //////////////////////////////////////////////////////////////////////////////
+      val doneIds = featuresRDD.map { case (id, features) =>
+        val efFileName = id.cleanId + ".json"
+        val efOutputPath = new File(featuresOutputPath)
+        val efFile = new File(efOutputPath, efFileName)
+        val ef = EF(id.uncleanId, features)
+        FileUtils.writeStringToFile(efFile, Json.prettyPrint(Json.toJson(ef)), StandardCharsets.UTF_8)
+        id.uncleanId
+      }
 
-      // retrieve information about any documents that have failed to be processed
-      val failed = ids.zip(results)
-        .filter(_._2.isFailure)
-        .map {
-          case (id, Failure(e)) =>
-            val cause = Option(e.getCause).getOrElse(e)
-            s"$id\t${cause.getMessage}"
+      doneIds.saveAsTextFile(new File(outputPath, "ids-done").toString)
+      ///////////////////////////////////////
+      // END: Save individual EF files
+      ///////////////////////////////////////
 
-          case _ => ""
-        }
+      if (volumeErrAcc.nonEmpty || featureExtractorErrAcc.nonEmpty) {
+        logger.info("Writing error report(s)...")
+        if (volumeErrAcc.nonEmpty)
+          volumeErrAcc.saveErrors(new Path(outputPath, "id_errors.txt"))
+        if (featureExtractorErrAcc.nonEmpty)
+          featureExtractorErrAcc.saveErrors(new Path(outputPath, "extractor_errors.txt"))
+      }
 
-      // ... and save that to disk for inspection
-      failed.saveAsTextFile(s"$outputPath/errors")
+      val t1 = Timer.nanoClock()
+      val elapsed = t1 - t0
+
+      logger.info(f"All done in ${Timer.pretty(elapsed)}")
+    }
+    catch {
+      case e: Throwable =>
+        logger.error(s"Uncaught exception", e)
+        stopSparkAndExit(sc, exitCode = 500)
     }
 
-    logger.info(f"All done in ${Timer.pretty(elapsed*1e6.toLong)}")
+    stopSparkAndExit(sc)
   }
-
-}
-
-/**
-  * Command line argument configuration
-  *
-  * @param arguments The cmd line args
-  */
-class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
-  val (appTitle, appVersion, appVendor) = {
-    val p = getClass.getPackage
-    val nameOpt = Option(p).flatMap(p => Option(p.getImplementationTitle))
-    val versionOpt = Option(p).flatMap(p => Option(p.getImplementationVersion))
-    val vendorOpt = Option(p).flatMap(p => Option(p.getImplementationVendor))
-    (nameOpt, versionOpt, vendorOpt)
-  }
-
-  version(appTitle.flatMap(
-    name => appVersion.flatMap(
-      version => appVendor.map(
-        vendor => s"$name $version\n$vendor"))).getOrElse(Main.appName))
-
-  val numPartitions = opt[Int]("num-partitions",
-    descr = "The number of partitions to split the input set of HT IDs into, " +
-      "for increased parallelism",
-    required = false,
-    argName = "N",
-    validate = 0<
-  )
-
-  val pairtreeRootPath = opt[File]("pairtree",
-    descr = "The path to the paitree root hierarchy to process",
-    required = true,
-    argName = "DIR"
-  )
-
-  val langProfilePath = opt[File]("lang-dir",
-    descr = "The path to the language profiles",
-    required = true,
-    argName = "DIR"
-  )
-
-  val nlpModelsPath = opt[File]("nlp-models-dir", short = 'm',
-    descr = "The path to the NLP models",
-    required = true,
-    argName = "DIR"
-  )
-
-  val outputPath = opt[File]("output",
-    descr = "Write the output to DIR (should not exist, or be empty)",
-    required = true,
-    argName = "DIR"
-  )
-
-  val compress = opt[Boolean]("compress",
-    descr = "Compress the output"
-  )
-
-  val indent = opt[Boolean]("indent",
-    descr = "Indent the output"
-  )
-
-  val htids = trailArg[File]("htids",
-    descr = "The file containing the HT IDs to be searched (if not provided, will read from stdin)",
-    required = false
-  )
-
-  validateFileExists(pairtreeRootPath)
-  validateFileExists(langProfilePath)
-  validateFileExists(nlpModelsPath)
-  validateFileExists(htids)
-  verify()
 }
