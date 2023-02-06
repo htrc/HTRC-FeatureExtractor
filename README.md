@@ -7,31 +7,33 @@ Extracts a set of features (such as ngram counts, POS tags, etc.) from the Hathi
 corpus for aiding in conducting 'distant-reading' (aka non-consumptive) research.
 
 # Build
-* To generate a "fat" executable JAR, run:  
-  `sbt assembly`  
-  then look for it in `target/scala-2.11/` folder.
-
-  *Note:* you can run the JAR via the usual: `java -jar JARFILE`
-
 * To generate a package that can be invoked via a shell script, run:  
   `sbt stage`  
   then find the result in `target/universal/stage/` folder.
+* To generate a distributable ZIP package, run:
+  `sbt dist`
+  then find the result in `target/universal/` folder.
   
 # Run
 ```
-feature-extractor
+extract-features
 HathiTrust Research Center
-  -c, --compress                Compress the output
-  -i, --indent                  Indent the output
-  -l, --lang-dir  <DIR>         The path to the language profiles
-  -m, --nlp-models-dir  <DIR>   The path to the NLP models
-  -n, --num-partitions  <N>     The number of partitions to split the input set
-                                of HT IDs into, for increased parallelism
-  -o, --output  <DIR>           Write the output to DIR (should not exist, or be empty)
-  -p, --pairtree  <DIR>         The path to the paitree root hierarchy to
-                                process
-      --help                    Show help message
-      --version                 Show version of this program
+  -l, --log-level  <LEVEL>    (Optional) The application log level; one of INFO,
+                              DEBUG, OFF (default = INFO)
+  -c, --num-cores  <N>        (Optional) The number of CPU cores to use (if not
+                              specified, uses all available cores)
+  -n, --num-partitions  <N>   (Optional) The number of partitions to split the
+                              input set of HT IDs into, for increased
+                              parallelism
+      --out-pairtree          (Optional) Saves the EF files in a pairtree folder
+                              hierarchy
+  -o, --output  <DIR>         Write the output to DIR (should not exist, or be
+                              empty)
+  -p, --pairtree  <DIR>       The path to the paitree root hierarchy to process
+      --spark-log  <FILE>     (Optional) Where to write logging output from
+                              Spark to
+  -h, --help                  Show help message
+  -v, --version               Show version of this program
 
  trailing arguments:
   htids (not required)   The file containing the HT IDs to be searched (if not
