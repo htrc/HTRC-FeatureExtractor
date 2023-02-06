@@ -34,19 +34,6 @@ inThisBuild(Seq(
   )
 ))
 
-lazy val publishSettings = Seq(
-  publishTo := Some("GitHub Package Registry" at "https://maven.pkg.github.com/htrc/HTRC-FeatureExtractor"),
-  // force to run 'test' before 'package' and 'publish' tasks
-  publish := (publish dependsOn Test / test).value,
-  Keys.`package` := (Compile / Keys.`package` dependsOn Test / test).value,
-  credentials += Credentials(
-    "GitHub Package Registry", // realm
-    "maven.pkg.github.com", // host
-    "htrc", // user
-    sys.env.getOrElse("GITHUB_TOKEN", "abc123") // password
-  )
-)
-
 lazy val ammoniteSettings = Seq(
   libraryDependencies +=
     {
@@ -64,6 +51,19 @@ lazy val ammoniteSettings = Seq(
   }.taskValue,
   connectInput := true,
   outputStrategy := Some(StdoutOutput)
+)
+
+lazy val publishSettings = Seq(
+  publishTo := Some("GitHub Package Registry" at "https://maven.pkg.github.com/htrc/HTRC-FeatureExtractor"),
+  // force to run 'test' before 'package' and 'publish' tasks
+  publish := (publish dependsOn Test / test).value,
+  Keys.`package` := (Compile / Keys.`package` dependsOn Test / test).value,
+  credentials += Credentials(
+    "GitHub Package Registry", // realm
+    "maven.pkg.github.com", // host
+    "htrc", // user
+    sys.env.getOrElse("GITHUB_TOKEN", "abc123") // password
+  )
 )
 
 lazy val `extract-features` = (project in file("."))
