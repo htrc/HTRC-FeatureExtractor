@@ -10,8 +10,8 @@ corpus for aiding in conducting 'distant-reading' (aka non-consumptive) research
 * To generate a package that can be invoked via a shell script, run:  
   `sbt stage`  
   then find the result in `target/universal/stage/` folder.
-* To generate a distributable ZIP package, run:
-  `sbt dist`
+* To generate a distributable ZIP package, run:  
+  `sbt dist`  
   then find the result in `target/universal/` folder.
   
 # Run
