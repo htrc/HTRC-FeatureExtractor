@@ -26,6 +26,12 @@ inThisBuild(Seq(
     ("Build-Date", new java.util.Date().toString)
   ),
   versionScheme := Some("semver-spec"),
+  credentials += Credentials(
+    "Sonatype Nexus Repository Manager", // realm
+    "nexus.htrc.illinois.edu", // host
+    "drhtrc", // user
+    sys.env.getOrElse("HTRC_NEXUS_DRHTRC_PWD", "abc123") // password
+  )
 ))
 
 lazy val publishSettings = Seq(
