@@ -90,5 +90,6 @@ lazy val `extract-features` = (project in file("."))
       "org.scalatestplus"             %% "scalacheck-1-15"          % "3.2.11.0" % Test
     ),
     Test / parallelExecution := false,
-    Test / fork := true
+    Test / fork := true,
+    evictionErrorLevel := Level.Info
   )
