@@ -39,7 +39,7 @@ object Main {
 
   @SuppressWarnings(Array("org.wartremover.warts.TryPartial"))
   def main(args: Array[String]): Unit = {
-    val conf = new Conf(args.toSeq)
+    val conf = new Conf(args.toIndexedSeq)
     val numPartitions = conf.numPartitions.toOption
     val numCores = conf.numCores.map(_.toString).getOrElse("*")
     val pairtreeRootPath = conf.pairtreeRootPath().toString
@@ -106,10 +106,10 @@ object Main {
       /////////////////////////////////////////////////////////////////
       // START: Uncomment below to save EF files as sequence files
       /////////////////////////////////////////////////////////////////
-      val featuresJsonRDD = featuresRDD
-        .map { case (id, features) => id.uncleanId -> Json.toJson(features).toString }
-
-      featuresJsonRDD.saveAsSequenceFile(featuresOutputPath, Some(classOf[org.apache.hadoop.io.compress.BZip2Codec]))
+//      val featuresJsonRDD = featuresRDD
+//        .map { case (id, features) => id.uncleanId -> Json.toJson(features).toString }
+//
+//      featuresJsonRDD.saveAsSequenceFile(featuresOutputPath, Some(classOf[org.apache.hadoop.io.compress.BZip2Codec]))
       ///////////////////////////////////////////////////
       // END: Save EF files as sequence files
       ///////////////////////////////////////////////////
@@ -118,16 +118,16 @@ object Main {
       //////////////////////////////////////////////////////////////////////////////
       // START: Uncomment below to save EF files individually to output folder
       //////////////////////////////////////////////////////////////////////////////
-//      val doneIds = featuresRDD.map { case (id, features) =>
-//        val efFileName = id.cleanId + ".json"
-//        val efOutputPath = new File(featuresOutputPath)
-//        val efFile = new File(efOutputPath, efFileName)
-//        val ef = EF(id.uncleanId, features)
-//        FileUtils.writeStringToFile(efFile, Json.prettyPrint(Json.toJson(ef)), StandardCharsets.UTF_8)
-//        id.uncleanId
-//      }
-//
-//      doneIds.saveAsTextFile(new File(outputPath, "ids-done").toString)
+      val doneIds = featuresRDD.map { case (id, features) =>
+        val efFileName = id.cleanId + ".json"
+        val efOutputPath = new File(featuresOutputPath)
+        val efFile = new File(efOutputPath, efFileName)
+        val ef = EF(id.uncleanId, features)
+        FileUtils.writeStringToFile(efFile, Json.prettyPrint(Json.toJson(ef)), StandardCharsets.UTF_8)
+        id.uncleanId
+      }
+
+      doneIds.saveAsTextFile(new File(outputPath, "ids-done").toString)
       ///////////////////////////////////////
       // END: Save individual EF files
       ///////////////////////////////////////

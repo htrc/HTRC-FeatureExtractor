@@ -79,7 +79,8 @@ class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
   )
 
   val htids: ScallopOption[File] = trailArg[File]("htids",
-    descr = "The file containing the HT IDs to be searched (if not provided, will read from stdin)"
+    descr = "The file containing the HT IDs to be searched (if not provided, will read from stdin)",
+    required = false
   )
 
   validateFileIsDirectory(pairtreeRootPath)
