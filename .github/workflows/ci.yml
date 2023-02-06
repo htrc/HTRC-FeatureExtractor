@@ -23,7 +23,7 @@ jobs:
           distribution: 'temurin'
           cache: 'sbt'
       - name: Run tests with coverage
-        run: sbt -mem 4000 coverage "+test" coverageReport
+        run: sbt -mem 4000 coverage test coverageReport
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
