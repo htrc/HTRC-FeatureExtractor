@@ -6,18 +6,6 @@
     </encoder>
   </appender>
 
-  <if condition='isDefined("spark.logFile")'>
-    <then>
-      <appender class="ch.qos.logback.core.FileAppender" name="FILE">
-        <file>${spark.logFile}</file>
-        <append>false</append>
-        <encoder>
-          <pattern>%date{yy/MM/dd HH:mm:ss} %level [%thread] %logger{1}: %msg%n</pattern>
-        </encoder>
-      </appender>
-    </then>
-  </if>
-
   <!-- Spark supplied settings to quiet down chatty logs -->
   <logger level="FATAL" name="org.apache.hadoop.hive.metastore.RetryingHMSHandler"/>
   <logger level="WARN"  name="org.spark_project.jetty"/>
@@ -30,22 +18,30 @@
   <logger level="ERROR" name="org.apache.hadoop.hive.ql.exec.FunctionRegistry"/>
 
   <!-- Default root logger (where all Spark output goes) -->
-  <root level="INFO">
-    <if condition='isDefined("spark.logFile")'>
-      <then>
-        <appender-ref ref="FILE"/>
-      </then>
-    </if>
-  </root>
+  <root level="INFO"/>
 
   <!-- additivity=false prevents logs for this logger to go to the other inherited appenders -->
   <logger additivity="false" level="${logLevel:-INFO}" name="extract-features">
     <appender-ref ref="STDOUT"/>
-
-    <if condition='isDefined("spark.logFile")'>
-      <then>
-        <appender-ref ref="FILE"/>
-      </then>
-    </if>
   </logger>
+
+  <if condition='isDefined("spark.logFile")'>
+    <then>
+      <appender class="ch.qos.logback.core.FileAppender" name="FILE">
+        <file>${spark.logFile}</file>
+        <append>false</append>
+        <encoder>
+          <pattern>%date{yy/MM/dd HH:mm:ss} %level [%thread] %logger{1}: %msg%n</pattern>
+        </encoder>
+      </appender>
+
+      <root>
+        <appender-ref ref="FILE"/>
+      </root>
+
+      <logger name="extract-features">
+        <appender-ref ref="FILE"/>
+      </logger>
+    </then>
+  </if>
 </configuration>

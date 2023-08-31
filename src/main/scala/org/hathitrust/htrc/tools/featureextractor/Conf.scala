@@ -73,10 +73,16 @@ class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
     argName = "DIR"
   )
 
-  val outputAsPairtree: ScallopOption[Boolean] = opt[Boolean]("out-pairtree",
-    descr = "Saves the EF files in a pairtree folder hierarchy",
-    noshort = true
+  val saveAsSeqFile: ScallopOption[Boolean] = opt[Boolean]("save-as-seq",
+    descr = "Saves the EF files as Hadoop sequence files",
+    required = false,
+    default = Some(false)
   )
+
+//  val outputAsPairtree: ScallopOption[Boolean] = opt[Boolean]("out-pairtree",
+//    descr = "Saves the EF files in a pairtree folder hierarchy",
+//    noshort = true
+//  )
 
   val htids: ScallopOption[File] = trailArg[File]("htids",
     descr = "The file containing the HT IDs to be searched (if not provided, will read from stdin)",
