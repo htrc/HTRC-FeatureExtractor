@@ -17,7 +17,6 @@ corpus for aiding in conducting 'distant-reading' (aka non-consumptive) research
 # Run
 ```
 extract-features
-HathiTrust Research Center
   -l, --log-level  <LEVEL>    (Optional) The application log level; one of INFO,
                               DEBUG, OFF (default = INFO)
   -c, --num-cores  <N>        (Optional) The number of CPU cores to use (if not
@@ -25,11 +24,11 @@ HathiTrust Research Center
   -n, --num-partitions  <N>   (Optional) The number of partitions to split the
                               input set of HT IDs into, for increased
                               parallelism
-      --out-pairtree          (Optional) Saves the EF files in a pairtree folder
-                              hierarchy
   -o, --output  <DIR>         Write the output to DIR (should not exist, or be
                               empty)
   -p, --pairtree  <DIR>       The path to the paitree root hierarchy to process
+  -s, --save-as-seq           (Optional) Saves the EF files as Hadoop sequence
+                              files
       --spark-log  <FILE>     (Optional) Where to write logging output from
                               Spark to
   -h, --help                  Show help message
