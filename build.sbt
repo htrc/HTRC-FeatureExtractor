@@ -84,7 +84,7 @@ lazy val `extract-features` = (project in file("."))
       "org.rogach"                    %% "scallop"                  % "5.0.0",
       "com.github.nscala-time"        %% "nscala-time"              % "2.32.0",
       "ch.qos.logback"                %  "logback-classic"          % "1.3.11",  // 1.3.x is built with Java8; 1.4.x with Java11
-      "org.codehaus.janino"           %  "janino"                   % "3.0.16",  // 3.1.x causes java.lang.ClassNotFoundException: org.codehaus.janino.InternalCompilerException
+      "org.codehaus.janino"           %  "janino"                   % "3.1.10",
       "org.scalacheck"                %% "scalacheck"               % "1.17.0"    % Test,
       "org.scalatest"                 %% "scalatest"                % "3.2.16"    % Test,
       "org.scalatestplus"             %% "scalacheck-1-15"          % "3.2.11.0"  % Test
