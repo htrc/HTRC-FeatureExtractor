@@ -79,7 +79,7 @@ lazy val `extract-features` = (project in file("."))
     libraryDependencies ++= Seq(
       "org.hathitrust.htrc"           %% "feature-extractor"        % "3.1.2",
       "org.hathitrust.htrc"           %% "data-model"               % "2.14.1",
-      "org.hathitrust.htrc"           %% "spark-utils"              % "1.5.3",
+      "org.hathitrust.htrc"           %% "spark-utils"              % "1.5.4",
       "com.typesafe.play"             %% "play-json"                % "2.9.4",
       "org.rogach"                    %% "scallop"                  % "5.0.0",
       "com.github.nscala-time"        %% "nscala-time"              % "2.32.0",

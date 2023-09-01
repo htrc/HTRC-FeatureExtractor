@@ -3,13 +3,14 @@ package org.hathitrust.htrc.tools.featureextractor
 import com.gilt.gfc.time.Timer
 import org.apache.commons.io.FileUtils
 import org.apache.hadoop.fs.Path
+import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.{SparkConf, SparkContext}
 import org.hathitrust.htrc.data.{HtrcVolume, HtrcVolumeId}
 import org.hathitrust.htrc.tools.featureextractor.Helper._
 import org.hathitrust.htrc.tools.featureextractor.features.{EF, VolumeFeatures}
 import org.hathitrust.htrc.tools.spark.errorhandling.ErrorAccumulator
 import org.hathitrust.htrc.tools.spark.errorhandling.RddExtensions._
+import org.hathitrust.htrc.tools.spark.utils.Helper.stopSparkAndExit
 import play.api.libs.json.Json
 
 import java.io.File
@@ -27,15 +28,6 @@ import scala.util.Using
 object Main {
   val appName: String = "extract-features"
   val supportedLanguages: Set[String] = Set("ar", "zh", "en", "fr", "de", "es")
-
-  def stopSparkAndExit(sc: SparkContext, exitCode: Int = 0): Unit = {
-    try {
-      sc.stop()
-    }
-    finally {
-      System.exit(exitCode)
-    }
-  }
 
   @SuppressWarnings(Array("org.wartremover.warts.TryPartial"))
   def main(args: Array[String]): Unit = {
