@@ -73,7 +73,7 @@ object Main {
 
       val t0 = Timer.nanoClock()
 
-      new File(outputPath).mkdirs()
+      conf.outputPath().mkdirs()
 
       val idsRDD = numPartitions match {
         case Some(n) => sc.parallelize(htids, n) // split input into n partitions
