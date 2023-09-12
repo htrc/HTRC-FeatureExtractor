@@ -97,7 +97,11 @@ object Main {
         val featuresJsonRDD = featuresRDD
           .map { case (id, features) => id.uncleanId -> Json.toJson(features).toString }
 
-        featuresJsonRDD.saveAsSequenceFile(featuresOutputPath, Some(classOf[org.apache.hadoop.io.compress.BZip2Codec]))
+        // the saving as BZip2Codec below resulted in errors when parsing the generated sequence files
+        // the error was related to  org.apache.hadoop.io.compress.bzip2.CBZip2InputStream about offset out of bounds
+        // this could be because of the built-in hadoop libs
+//        featuresJsonRDD.saveAsSequenceFile(featuresOutputPath, Some(classOf[org.apache.hadoop.io.compress.BZip2Codec]))
+        featuresJsonRDD.saveAsSequenceFile(featuresOutputPath)
       } else {
         val doneIds = featuresRDD.map { case (id, features) =>
           val efFileName = id.cleanId + ".json"
