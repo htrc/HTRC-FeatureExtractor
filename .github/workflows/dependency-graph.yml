@@ -3,6 +3,10 @@ on:
   push:
     branches:
       - main
+
+env:
+  HTRC_NEXUS_DRHTRC_PWD: ${{ secrets.HTRC_NEXUS_DRHTRC_PWD }}
+
 jobs:
   dependency-graph:
     name: Update Dependency Graph
