@@ -2,6 +2,7 @@ package org.hathitrust.htrc.tools.featureextractor
 
 import com.gilt.gfc.time.Timer
 import org.apache.commons.io.FileUtils
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream
 import org.apache.hadoop.fs.Path
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
@@ -13,7 +14,7 @@ import org.hathitrust.htrc.tools.spark.errorhandling.RddExtensions._
 import org.hathitrust.htrc.tools.spark.utils.Helper.stopSparkAndExit
 import play.api.libs.json.Json
 
-import java.io.File
+import java.io.{File, BufferedOutputStream, FileOutputStream}
 import java.nio.charset.StandardCharsets
 import scala.io.{Codec, Source, StdIn}
 import scala.util.Using
@@ -104,11 +105,20 @@ object Main {
         featuresJsonRDD.saveAsSequenceFile(featuresOutputPath)
       } else {
         val doneIds = featuresRDD.map { case (id, features) =>
-          val efFileName = id.cleanId + ".json"
+          val efFileName = id.cleanId + ".json.bz2"
           val efOutputPath = new File(featuresOutputPath)
           val efFile = new File(efOutputPath, efFileName)
+          efFile.getParentFile().mkdirs();
+          val efFileOutputStream = new FileOutputStream(efFile)
+          val efBufferedOutputStream = new BufferedOutputStream(efFileOutputStream)
+          val efBzipOutputStream = new BZip2CompressorOutputStream(efBufferedOutputStream)
           val ef = EF(id.uncleanId, features)
-          FileUtils.writeStringToFile(efFile, Json.prettyPrint(Json.toJson(ef)), StandardCharsets.UTF_8)
+          try {
+            efBzipOutputStream.write(Json.prettyPrint(Json.toJson(ef)).getBytes("UTF-8"))
+          } finally {
+            efBzipOutputStream.close()
+          }
+//          FileUtils.writeStringToFile(efFile, Json.prettyPrint(Json.toJson(ef)), StandardCharsets.UTF_8)
           id.uncleanId
         }
 
