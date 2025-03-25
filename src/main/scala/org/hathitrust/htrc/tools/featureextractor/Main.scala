@@ -118,7 +118,6 @@ object Main {
           } finally {
             efBzipOutputStream.close()
           }
-//          FileUtils.writeStringToFile(efFile, Json.prettyPrint(Json.toJson(ef)), StandardCharsets.UTF_8)
           id.uncleanId
         }
 
