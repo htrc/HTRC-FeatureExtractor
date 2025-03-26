@@ -116,7 +116,6 @@ object Main {
           try {
             efBzipOutputStream.write(Json.prettyPrint(Json.toJson(ef)).getBytes("UTF-8"))
           } finally {
-            efBzipOutputStream.flush()
             efBzipOutputStream.close()
           }
           id.uncleanId
