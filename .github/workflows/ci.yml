@@ -26,6 +26,8 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
           cache: 'sbt'
+      - name: Set up sbt
+        uses: sbt/setup-sbt@v1
       - name: Run tests with coverage
         run: sbt -mem 4000 coverage test coverageReport
       - name: Upload coverage to Codecov
